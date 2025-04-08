@@ -29,10 +29,11 @@ class MeshProcessingError(Exception):
 
 
 def preprocess_image(
+    # Union là type hint trong Python. Nó cho phép chỉ định rằng một biến hoặc tham số có thể thuộc nhiều kiểu dữ liệu khác nhau.
     image_path: Union[str, np.ndarray],
     target_size: Tuple[int, int] = (224, 224),
     config: Optional[ModelConfig] = None
-) -> torch.Tensor:
+) -> torch.Tensor:  # được sử dụng để biểu diễn và thao tác với dữ liệu dưới dạng mảng đa chiều (multi-dimensional array). Nó tương tự như numpy.ndarray trong NumPy, nhưng được thiết kế đặc biệt để hỗ trợ các tính toán trên GPU, giúp tăng tốc các tác vụ liên quan đến học sâu (deep learning) và xử lý dữ liệu lớn.
     """
     Preprocess image for model input with error handling.
 
@@ -68,12 +69,15 @@ def preprocess_image(
         image = cv2.resize(image, target_size)
 
         # Convert to PIL Image
-        image = Image.fromarray(image)
+        image = Image.fromarray(image)  # Chuẩn bị cho chuyển đổi sang tensor
 
         # Convert to tensor
+        # .float(): Chuyển đổi tensor sang kiểu dữ liệu float32 ( Hầu hết các mô hình học sâu yêu cầu dữ liệu đầu vào ở dạng số thực (floati ng-point) để thực hiện các phép tính chính xác.)
+        # / 255.0: Chuẩn hóa giá trị pixel của hình ảnh (Giá trị pixel của hình ảnh thường nằm trong khoảng từ 0 đến 255 (đối với hình ảnh RGB), Chia cho 255.0 sẽ đưa các giá trị này về khoảng [0, 1], giúp mô hình học sâu hội tụ tốt hơn trong quá trình huấn luyện)
         image = torch.from_numpy(np.array(image)).float() / 255.0
         image = image.permute(2, 0, 1).unsqueeze(0)
-
+        # .permute(2, 0, 1): Thay đổi thứ tự các chiều của tensor (Hình ảnh RGB thường có thứ tự chiều là (height, width, channels) (chiều cao, chiều rộng, số kênh màu), PyTorch yêu cầu thứ tự chiều là (channels, height, width) để phù hợp với các mô hình học sâu)
+        # .unsqueeze(0): Thêm một chiều mới ở vị trí đầu tiên (Các mô hình học sâu thường yêu cầu dữ liệu đầu vào có dạng (batch_size, channels, height, width), trong đó batch_size là số lượng mẫu trong một batch, unsqueeze(0) thêm một chiều batch size với giá trị là 1, biến tensor thành dạng (1, channels, height, width))
         return image
 
     except Exception as e:
