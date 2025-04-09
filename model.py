@@ -17,12 +17,15 @@ from tqdm import tqdm
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
+        # Convolution layers
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3, padding=1)
+        # Batch normalization
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)
         self.bn2 = nn.BatchNorm2d(out_channels)
 
         if in_channels != out_channels:
+            # Shortcut connection (1x1 convolution)
             self.shortcut = nn.Sequential(
                 nn.Conv2d(in_channels, out_channels, 1),
                 nn.BatchNorm2d(out_channels)
@@ -35,6 +38,25 @@ class ResidualBlock(nn.Module):
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
         return F.relu(out + identity)
+
+# Tại sao không có pooling layer ở encoder?
+# Trong kiến trúc này, thay vì sử dụng pooling layers, sử dụng:
+# - Residual blocks với stride=1
+# - Batch normalization
+# - Skip connections
+# Lý do:
+# 1. Giữ thông tin không gian:
+# - Pooling làm mất thông tin không gian
+# - Trong 3D reconstruction, thông tin không gian rất quan trọng
+# - Cần giữ chi tiết cho depth prediction
+# 2. Residual Learning:
+# - ResNet đã chứng minh không cần pooling
+# - Batch normalization + ReLU đủ để học features
+# - Skip connections giúp truyền gradient tốt hơn
+# 3. Hiệu quả tính toán:
+# - Pooling giảm kích thước feature map
+# - Trong trường hợp này, giảm kích thước qua channels
+# - Giữ nguyên spatial dimensions
 
 
 class Zero123Plus(nn.Module):
@@ -60,12 +82,15 @@ class Zero123Plus(nn.Module):
         self.decoder = nn.ModuleList()
         in_channels = self.config.encoder_channels[-1]
         for out_channels in self.config.decoder_channels:
+            # Transposed convolution layer
             self.decoder.append(nn.Sequential(
                 nn.ConvTranspose2d(in_channels, out_channels,
                                    self.config.decoder_kernel_size,
                                    stride=self.config.decoder_stride,
                                    padding=self.config.decoder_stride//2),
+                # Batch normalization
                 nn.BatchNorm2d(out_channels),
+                # ReLU activation
                 nn.ReLU()
             ))
             in_channels = out_channels
@@ -83,6 +108,17 @@ class Zero123Plus(nn.Module):
             nn.Conv2d(64, 3, self.config.depth_kernel_size, padding=1),
             nn.Sigmoid()
         )
+# Lý do sử dụng Sigmoid:
+# 1. Normalized Depth Values:
+# - Sigmoid output: [0, 1]
+# - Depth values cần được normalize
+# - Phù hợp với marching cubes algorithm
+# 2. Vanishing Gradient:
+# - Trong trường hợp này, vanishing gradient không phải vấn đề lớn vì:
+# - Có skip connections
+# - Có batch normalization
+# - Network không quá sâu
+# - Có residual blocks
 
         # Initialize parallel processing pool if needed
         if self.config.use_parallel_processing:
