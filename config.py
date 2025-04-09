@@ -13,20 +13,21 @@ class OutputFormat(Enum):
 @dataclass
 class ModelConfig:
     # Image processing
-    image_size: Tuple[int, int] = (224, 224)
-    input_channels: int = 3
+    image_size: Tuple[int, int] = (224, 224)  # Width, Height
+    input_channels: int = 3  # RGB (3 channels for Red, Green, Blue)
 
     # CLIP model
-    clip_model_name: str = "openai/clip-vit-base-patch32"
+    clip_model_name: str = "openai/clip-vit-base-patch32"  # Pre-trained CLIP model
 
     # Encoder configuration
+    # Number of channels in each layer
     encoder_channels: Tuple[int, ...] = (512, 256, 128, 64)
-    encoder_kernel_size: int = 3
+    encoder_kernel_size: int = 3  # Kernel size for convolutional layers
 
     # Decoder configuration
-    decoder_channels: Tuple[int, ...] = (64, 32, 16, 3)
-    decoder_kernel_size: int = 4
-    decoder_stride: int = 2
+    decoder_channels: Tuple[int, ...] = (64, 32, 16, 3)  # Output channels
+    decoder_kernel_size: int = 4  # Kernel size for transposed convolutional layers
+    decoder_stride: int = 2  # Stride for transposed convolutional layers
 
     # Depth prediction
     depth_channels: Tuple[int, ...] = (64, 32, 1)
